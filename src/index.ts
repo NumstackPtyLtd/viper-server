@@ -1,24 +1,23 @@
 /**
  * Open-source server entry point.
  *
- * Uses the composable pieces directly — no cloud overlay.
- * Single-tenant mode (NoOpTenantService is the default).
- *
- * The cloud overlay (viper-cloud) imports from ./server.ts
- * and injects CloudTenantService + additional routes.
+ * Boots even when providers aren't configured.
+ * Configure via: PUT /api/settings then POST /api/reload
  */
 import { serve } from '@hono/node-server'
 import { createContainer } from './container.js'
 import { createApp } from './app.js'
 import { logger } from './shared/logger.js'
 
-// --- Composition root (single-tenant, no options needed) ---
 const container = createContainer()
-
-// --- App ---
 const app = createApp(container)
 
-// --- Start ---
 serve({ fetch: app.fetch, port: container.env.PORT }, (info) => {
   logger.info({ port: info.port }, 'Viper server listening')
+
+  if (container.configured) {
+    logger.info('Providers configured — ready to review')
+  } else {
+    logger.warn('Providers not configured — PUT /api/settings then POST /api/reload')
+  }
 })

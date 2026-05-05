@@ -7,6 +7,8 @@ import { getDatabase } from './db/database.js'
 import { ReviewMergeRequest } from './application/use-cases/ReviewMergeRequest.js'
 import { RespondToDiscussion } from './application/use-cases/RespondToDiscussion.js'
 import type { TenantService } from './application/ports/TenantService.js'
+import type { VcsPlugin, VcsProvider } from 'viper-vcs-providers'
+import type { AiReviewer } from 'viper-ai-providers'
 
 // Import registries from external packages — auto-registers all built-in plugins
 import { registry as vcsRegistry } from 'viper-vcs-providers'
@@ -20,53 +22,78 @@ export function createContainer(options?: ContainerOptions) {
   const env = loadEnvConfig()
   const tenantService: TenantService = options?.tenantService ?? new NoOpTenantService()
 
-  // Database
+  // Database + settings (always available — even before providers are configured)
   const db = getDatabase(env.DATABASE_PATH)
   const settings = new SqliteSettingsRepository(db)
 
-  // Resolve providers from DB settings
-  const vcsType = settings.get('vcs_provider_type')
-  const vcsToken = settings.get('vcs_token')
-  const vcsUrl = settings.get('vcs_url')
-  const aiType = settings.get('ai_provider_type')
-  const aiApiKey = settings.get('ai_api_key')
-  const aiModel = settings.get('ai_model')
+  // Lazy-resolved providers — only created when settings exist
+  let _vcsPlugin: VcsPlugin | null = null
+  let _vcsProvider: VcsProvider | null = null
+  let _aiReviewer: AiReviewer | null = null
+  let _reviewMergeRequest: ReviewMergeRequest | null = null
+  let _respondToDiscussion: RespondToDiscussion | null = null
 
-  if (!vcsType || !vcsToken || !vcsUrl) {
-    throw new Error('VCS provider not configured. Set vcs_provider_type, vcs_token, and vcs_url in settings.')
+  function resolveProviders(): { configured: boolean } {
+    const vcsType = settings.get('vcs_provider_type')
+    const vcsToken = settings.get('vcs_token')
+    const vcsUrl = settings.get('vcs_url')
+    const aiType = settings.get('ai_provider_type')
+    const aiApiKey = settings.get('ai_api_key')
+    const aiModel = settings.get('ai_model')
+
+    if (!vcsType || !vcsToken || !vcsUrl || !aiType || !aiApiKey) {
+      return { configured: false }
+    }
+
+    _vcsPlugin = vcsRegistry.get(vcsType)
+    _vcsProvider = _vcsPlugin.createProvider({ token: vcsToken, url: vcsUrl })
+
+    const aiPlugin = aiRegistry.get(aiType)
+    _aiReviewer = aiPlugin.createReviewer({ apiKey: aiApiKey, model: aiModel ?? undefined })
+
+    const configLoader = new YamlConfigLoader(_vcsProvider)
+    const eventBus = new LogEventBus()
+
+    _reviewMergeRequest = new ReviewMergeRequest(_vcsProvider, _aiReviewer, configLoader, eventBus)
+    _respondToDiscussion = new RespondToDiscussion(_vcsProvider, _aiReviewer, configLoader)
+
+    return { configured: true }
   }
-  if (!aiType || !aiApiKey) {
-    throw new Error('AI provider not configured. Set ai_provider_type and ai_api_key in settings.')
-  }
 
-  const vcsPlugin = vcsRegistry.get(vcsType)
-  const vcsProvider = vcsPlugin.createProvider({ token: vcsToken, url: vcsUrl })
-
-  const aiPlugin = aiRegistry.get(aiType)
-  const aiReviewer = aiPlugin.createReviewer({ apiKey: aiApiKey, model: aiModel ?? undefined })
-
-  // Infrastructure
-  const configLoader = new YamlConfigLoader(vcsProvider)
-  const eventBus = new LogEventBus()
-
-  // Application (use cases)
-  const reviewMergeRequest = new ReviewMergeRequest(vcsProvider, aiReviewer, configLoader, eventBus)
-  const respondToDiscussion = new RespondToDiscussion(vcsProvider, aiReviewer, configLoader)
+  // Try resolving on startup (won't crash if not configured)
+  const { configured } = resolveProviders()
 
   return {
     env,
     settings,
     tenantService,
-    vcsPlugin,
-    aiPlugin,
-    vcsProvider,
-    aiReviewer,
-    configLoader,
-    eventBus,
-    reviewMergeRequest,
-    respondToDiscussion,
     vcsRegistry,
     aiRegistry,
+    configured,
+
+    /** Re-read settings and rebuild providers. Call after PUT /api/settings. */
+    reload: resolveProviders,
+
+    get vcsPlugin(): VcsPlugin {
+      if (!_vcsPlugin) throw new Error('VCS provider not configured')
+      return _vcsPlugin
+    },
+    get vcsProvider(): VcsProvider {
+      if (!_vcsProvider) throw new Error('VCS provider not configured')
+      return _vcsProvider
+    },
+    get aiReviewer(): AiReviewer {
+      if (!_aiReviewer) throw new Error('AI provider not configured')
+      return _aiReviewer
+    },
+    get reviewMergeRequest(): ReviewMergeRequest {
+      if (!_reviewMergeRequest) throw new Error('Providers not configured')
+      return _reviewMergeRequest
+    },
+    get respondToDiscussion(): RespondToDiscussion {
+      if (!_respondToDiscussion) throw new Error('Providers not configured')
+      return _respondToDiscussion
+    },
   }
 }
 

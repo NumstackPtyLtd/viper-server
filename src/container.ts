@@ -10,8 +10,11 @@ import { SqliteConnectionRepository } from './infrastructure/persistence/SqliteC
 import { SqliteProjectRepository } from './infrastructure/persistence/SqliteProjectRepository.js'
 import { SqliteWikiRepository } from './infrastructure/persistence/SqliteWikiRepository.js'
 import { SqliteReviewConfigRepository } from './infrastructure/persistence/SqliteReviewConfigRepository.js'
+import { SqlitePolicyRepository } from './infrastructure/persistence/SqlitePolicyRepository.js'
+import { MinimatchGlobMatcher } from './infrastructure/glob/MinimatchGlobMatcher.js'
 import { getDatabase } from './db/database.js'
 import { ReviewMergeRequest } from './application/use-cases/ReviewMergeRequest.js'
+import { PolicyResolver } from './application/services/PolicyResolver.js'
 import { RespondToDiscussion } from './application/use-cases/RespondToDiscussion.js'
 import type { TenantService } from './application/ports/TenantService.js'
 import type { VcsPlugin, VcsProvider } from 'viper-vcs-providers'
@@ -39,6 +42,9 @@ export function createContainer(options?: ContainerOptions) {
   const projects = new SqliteProjectRepository(db)
   const wiki = new SqliteWikiRepository(db)
   const reviewConfigs = new SqliteReviewConfigRepository(db)
+  const policies = new SqlitePolicyRepository(db)
+  const globMatcher = new MinimatchGlobMatcher()
+  const policyResolver = new PolicyResolver(policies, wiki, globMatcher)
 
   // Lazy-resolved providers — only created when settings exist
   let _vcsPlugin: VcsPlugin | null = null
@@ -105,7 +111,7 @@ export function createContainer(options?: ContainerOptions) {
     const configLoader = new YamlConfigLoader(_vcsProvider)
     const eventBus = new LogEventBus()
 
-    _reviewMergeRequest = new ReviewMergeRequest(_vcsProvider, _aiReviewer, configLoader, eventBus)
+    _reviewMergeRequest = new ReviewMergeRequest(_vcsProvider, _aiReviewer, configLoader, eventBus, policyResolver, wiki)
     _respondToDiscussion = new RespondToDiscussion(_vcsProvider, _aiReviewer, configLoader)
 
     return { configured: true }
@@ -124,6 +130,8 @@ export function createContainer(options?: ContainerOptions) {
     projects,
     wiki,
     reviewConfigs,
+    policies,
+    policyResolver,
     tenantService,
     vcsRegistry,
     aiRegistry,

@@ -5,4 +5,6 @@ export interface ReviewMergeRequestDTO {
   description: string | null;
   sourceBranch: string;
   targetBranch: string;
+  orgId?: string;
+  internalProjectId?: string;
 }

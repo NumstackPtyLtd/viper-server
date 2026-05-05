@@ -1,25 +1,35 @@
 import type Database from 'better-sqlite3'
-import type { WikiRepository, WikiRow, WikiListParams } from '../../domain/ports/WikiRepository.js'
+import type { WikiRepository, WikiRow, WikiListParams, WikiListResult } from '../../domain/ports/WikiRepository.js'
 
 export class SqliteWikiRepository implements WikiRepository {
   constructor(private readonly db: Database.Database) {}
 
-  list(params: WikiListParams): WikiRow[] {
-    const conditions = ['org_id = ?']
-    const args: unknown[] = [params.org_id]
+  list(params: WikiListParams): WikiListResult {
+    const conditions = ['owner_type = ?', 'owner_id = ?']
+    const args: unknown[] = [params.owner_type, params.owner_id]
     if (params.category) { conditions.push('category = ?'); args.push(params.category) }
-    if (params.project_id === 'org') { conditions.push('project_id IS NULL') }
-    else if (params.project_id) { conditions.push('project_id = ?'); args.push(params.project_id) }
-    return this.db.prepare(`SELECT * FROM wiki_entries WHERE ${conditions.join(' AND ')} ORDER BY updated_at DESC`).all(...args) as WikiRow[]
+    if (params.q) { conditions.push('(title LIKE ? OR content LIKE ?)'); args.push(`%${params.q}%`, `%${params.q}%`) }
+    const where = conditions.join(' AND ')
+    const total = (this.db.prepare(`SELECT COUNT(*) as c FROM wiki_entries WHERE ${where}`).get(...args) as { c: number }).c
+    const limit = Math.min(params.limit || 25, 100)
+    const offset = params.offset || 0
+    const entries = this.db.prepare(`SELECT * FROM wiki_entries WHERE ${where} ORDER BY updated_at DESC LIMIT ? OFFSET ?`).all(...args, limit, offset) as WikiRow[]
+    return { entries, total }
   }
 
   getById(id: string): WikiRow | null {
     return this.db.prepare('SELECT * FROM wiki_entries WHERE id = ?').get(id) as WikiRow | undefined ?? null
   }
 
+  getByIds(ids: string[]): WikiRow[] {
+    if (ids.length === 0) return []
+    const placeholders = ids.map(() => '?').join(',')
+    return this.db.prepare(`SELECT * FROM wiki_entries WHERE id IN (${placeholders})`).all(...ids) as WikiRow[]
+  }
+
   create(e: WikiRow): void {
-    this.db.prepare('INSERT INTO wiki_entries (id, org_id, project_id, title, content, category, tags, scope) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .run(e.id, e.org_id, e.project_id, e.title, e.content, e.category, e.tags, e.scope)
+    this.db.prepare('INSERT INTO wiki_entries (id, owner_type, owner_id, title, content, category, tags) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .run(e.id, e.owner_type, e.owner_id, e.title, e.content, e.category, e.tags)
   }
 
   update(id: string, data: Partial<WikiRow>): void {
@@ -38,38 +48,43 @@ export class SqliteWikiRepository implements WikiRepository {
     this.db.prepare('DELETE FROM wiki_entries WHERE id = ?').run(id)
   }
 
-  search(orgId: string, q: string): WikiRow[] {
-    return this.db.prepare('SELECT * FROM wiki_entries WHERE org_id = ? AND (title LIKE ? OR content LIKE ?) ORDER BY match_count DESC LIMIT 20')
-      .all(orgId, `%${q}%`, `%${q}%`) as WikiRow[]
+  search(ownerType: string, ownerId: string, q: string): WikiRow[] {
+    return this.db.prepare('SELECT * FROM wiki_entries WHERE owner_type = ? AND owner_id = ? AND (title LIKE ? OR content LIKE ?) ORDER BY match_count DESC LIMIT 20')
+      .all(ownerType, ownerId, `%${q}%`, `%${q}%`) as WikiRow[]
   }
 
-  stats(orgId: string): {
-    total: number; orgWide: number; neverMatched: number
-    byCategory: Record<string, number>; byProject: Record<string, number>
-    projects: Array<{ id: string; name: string }>; staleEntries: WikiRow[]; topMatched: WikiRow[]
-  } {
-    const total = (this.db.prepare('SELECT COUNT(*) as c FROM wiki_entries WHERE org_id = ?').get(orgId) as { c: number }).c
-    const orgWide = (this.db.prepare('SELECT COUNT(*) as c FROM wiki_entries WHERE org_id = ? AND project_id IS NULL').get(orgId) as { c: number }).c
-    const neverMatched = (this.db.prepare('SELECT COUNT(*) as c FROM wiki_entries WHERE org_id = ? AND match_count = 0').get(orgId) as { c: number }).c
+  incrementMatchCount(ids: string[]): void {
+    if (ids.length === 0) return
+    const placeholders = ids.map(() => '?').join(',')
+    this.db.prepare(`UPDATE wiki_entries SET match_count = match_count + 1, last_matched_at = datetime('now') WHERE id IN (${placeholders})`).run(...ids)
+  }
 
-    const catRows = this.db.prepare('SELECT category, COUNT(*) as c FROM wiki_entries WHERE org_id = ? GROUP BY category').all(orgId) as Array<{ category: string; c: number }>
+  stats(ownerType: string, ownerId: string): {
+    total: number; neverMatched: number
+    byCategory: Record<string, number>
+    allTags: string[]
+    staleEntries: WikiRow[]; topMatched: WikiRow[]
+  } {
+    const total = (this.db.prepare('SELECT COUNT(*) as c FROM wiki_entries WHERE owner_type = ? AND owner_id = ?').get(ownerType, ownerId) as { c: number }).c
+    const neverMatched = (this.db.prepare('SELECT COUNT(*) as c FROM wiki_entries WHERE owner_type = ? AND owner_id = ? AND match_count = 0').get(ownerType, ownerId) as { c: number }).c
+
+    const catRows = this.db.prepare('SELECT category, COUNT(*) as c FROM wiki_entries WHERE owner_type = ? AND owner_id = ? GROUP BY category').all(ownerType, ownerId) as Array<{ category: string; c: number }>
     const byCategory = Object.fromEntries(catRows.map((r) => [r.category, r.c]))
 
-    const projRows = this.db.prepare('SELECT project_id, COUNT(*) as c FROM wiki_entries WHERE org_id = ? AND project_id IS NOT NULL GROUP BY project_id').all(orgId) as Array<{ project_id: string; c: number }>
-    const byProject = Object.fromEntries(projRows.map((r) => [r.project_id, r.c]))
+    const tagRows = this.db.prepare('SELECT DISTINCT json_each.value as tag FROM wiki_entries, json_each(tags) WHERE owner_type = ? AND owner_id = ? ORDER BY tag').all(ownerType, ownerId) as Array<{ tag: string }>
+    const allTags = tagRows.map((r) => r.tag)
 
-    const projects = this.db.prepare('SELECT id, name FROM projects WHERE org_id = ?').all(orgId) as Array<{ id: string; name: string }>
-    const staleEntries = this.db.prepare('SELECT * FROM wiki_entries WHERE org_id = ? AND match_count = 0 ORDER BY created_at ASC LIMIT 5').all(orgId) as WikiRow[]
-    const topMatched = this.db.prepare('SELECT * FROM wiki_entries WHERE org_id = ? AND match_count > 0 ORDER BY match_count DESC LIMIT 5').all(orgId) as WikiRow[]
+    const staleEntries = this.db.prepare('SELECT * FROM wiki_entries WHERE owner_type = ? AND owner_id = ? AND match_count = 0 ORDER BY created_at ASC LIMIT 5').all(ownerType, ownerId) as WikiRow[]
+    const topMatched = this.db.prepare('SELECT * FROM wiki_entries WHERE owner_type = ? AND owner_id = ? AND match_count > 0 ORDER BY match_count DESC LIMIT 5').all(ownerType, ownerId) as WikiRow[]
 
-    return { total, orgWide, neverMatched, byCategory, byProject, projects, staleEntries, topMatched }
+    return { total, neverMatched, byCategory, allTags, staleEntries, topMatched }
   }
 
   bulkCreate(entries: WikiRow[]): number {
-    const stmt = this.db.prepare('INSERT INTO wiki_entries (id, org_id, project_id, title, content, category, tags, scope) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    const stmt = this.db.prepare('INSERT INTO wiki_entries (id, owner_type, owner_id, title, content, category, tags) VALUES (?, ?, ?, ?, ?, ?, ?)')
     let count = 0
     for (const e of entries) {
-      stmt.run(e.id, e.org_id, e.project_id, e.title, e.content, e.category, e.tags, e.scope)
+      stmt.run(e.id, e.owner_type, e.owner_id, e.title, e.content, e.category, e.tags)
       count++
     }
     return count

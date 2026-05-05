@@ -8,21 +8,32 @@ export function wikiRoutes(deps: Deps): Hono {
   const app = new Hono()
 
   app.get('/api/wiki', (c) => {
-    const entries = deps.wiki.list({
-      org_id: deps.getOrgId(),
+    const ownerType = c.req.query('owner_type') || 'org'
+    const ownerId = c.req.query('owner_id') || deps.getOrgId()
+    const limit = c.req.query('limit') ? Number(c.req.query('limit')) : undefined
+    const offset = c.req.query('offset') ? Number(c.req.query('offset')) : undefined
+    const result = deps.wiki.list({
+      owner_type: ownerType,
+      owner_id: ownerId,
       category: c.req.query('category') || undefined,
-      project_id: c.req.query('project_id') || undefined,
+      q: c.req.query('q') || undefined,
+      limit,
+      offset,
     })
-    return c.json({ entries: entries.map(parseJsonFields) })
+    return c.json({ entries: result.entries.map(parseJsonFields), total: result.total })
   })
 
   app.get('/api/wiki/stats', (c) => {
-    return c.json(deps.wiki.stats(deps.getOrgId()))
+    const ownerType = c.req.query('owner_type') || 'org'
+    const ownerId = c.req.query('owner_id') || deps.getOrgId()
+    return c.json(deps.wiki.stats(ownerType, ownerId))
   })
 
   app.get('/api/wiki/search', (c) => {
+    const ownerType = c.req.query('owner_type') || 'org'
+    const ownerId = c.req.query('owner_id') || deps.getOrgId()
     const q = c.req.query('q') || ''
-    const results = deps.wiki.search(deps.getOrgId(), q)
+    const results = deps.wiki.search(ownerType, ownerId, q)
     return c.json({ results: results.map(parseJsonFields) })
   })
 
@@ -36,9 +47,11 @@ export function wikiRoutes(deps: Deps): Hono {
     const body = await c.req.json()
     const id = randomUUID()
     deps.wiki.create({
-      id, org_id: deps.getOrgId(), project_id: body.project_id ?? null,
+      id,
+      owner_type: body.owner_type ?? 'org',
+      owner_id: body.owner_id ?? deps.getOrgId(),
       title: body.title, content: body.content, category: body.category ?? 'general',
-      tags: JSON.stringify(body.tags ?? []), scope: JSON.stringify(body.scope ?? []),
+      tags: JSON.stringify(body.tags ?? []),
       match_count: 0, last_matched_at: null,
       created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     })
@@ -52,8 +65,8 @@ export function wikiRoutes(deps: Deps): Hono {
     if (body.content !== undefined) data.content = body.content
     if (body.category !== undefined) data.category = body.category
     if (body.tags !== undefined) data.tags = JSON.stringify(body.tags)
-    if (body.scope !== undefined) data.scope = JSON.stringify(body.scope)
-    if (body.project_id !== undefined) data.project_id = body.project_id
+    if (body.owner_type !== undefined) data.owner_type = body.owner_type
+    if (body.owner_id !== undefined) data.owner_id = body.owner_id
     deps.wiki.update(c.req.param('id'), data)
     return c.json({ status: 'ok' })
   })
@@ -67,10 +80,10 @@ export function wikiRoutes(deps: Deps): Hono {
     const body = await c.req.json()
     const orgId = deps.getOrgId()
     const entries = (body.entries ?? []).map((e: Record<string, unknown>) => ({
-      id: randomUUID(), org_id: orgId, project_id: null,
+      id: randomUUID(), owner_type: 'org' as const, owner_id: orgId,
       title: e.title as string, content: e.content as string,
       category: (e.category as string) ?? 'general',
-      tags: JSON.stringify(e.tags ?? []), scope: JSON.stringify(e.scope ?? []),
+      tags: JSON.stringify(e.tags ?? []),
       match_count: 0, last_matched_at: null,
       created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     }))
@@ -81,10 +94,9 @@ export function wikiRoutes(deps: Deps): Hono {
   return app
 }
 
-function parseJsonFields<T extends { tags: string; scope: string }>(row: T) {
+function parseJsonFields<T extends { tags: string }>(row: T) {
   return {
     ...row,
     tags: JSON.parse(row.tags),
-    scope: JSON.parse(row.scope),
   }
 }

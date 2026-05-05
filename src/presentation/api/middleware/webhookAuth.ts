@@ -4,7 +4,7 @@ import { logger } from "../../../shared/logger.js";
 
 /**
  * VCS-agnostic webhook auth middleware.
- * Delegates header validation to the active VCS plugin.
+ * Reads the raw body and delegates validation to the active VCS plugin.
  */
 export function webhookAuth(vcsPlugin: VcsPlugin, secret: string): MiddlewareHandler {
   return async (c, next) => {
@@ -13,7 +13,10 @@ export function webhookAuth(vcsPlugin: VcsPlugin, secret: string): MiddlewareHan
       headers[key.toLowerCase()] = value
     })
 
-    if (!vcsPlugin.validateWebhookAuth(headers, secret)) {
+    // Clone the request to read the raw body for HMAC verification
+    const rawBody = await c.req.raw.clone().text()
+
+    if (!vcsPlugin.validateWebhookAuth(headers, secret, rawBody)) {
       logger.warn({ provider: vcsPlugin.type }, "Webhook request with invalid auth");
       return c.json({ error: "Unauthorized" }, 401);
     }

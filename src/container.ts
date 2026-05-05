@@ -100,7 +100,7 @@ export function createContainer(options?: ContainerOptions) {
       if (!aiConfig[f.name] && f.defaultValue) aiConfig[f.name] = f.defaultValue
     }
 
-    _aiReviewer = aiPlugin.createReviewer({ apiKey: aiConfig.api_key ?? aiConfig.apiKey ?? '', model: aiConfig.model })
+    _aiReviewer = aiPlugin.createReviewer({ apiKey: aiConfig.api_key ?? '', model: aiConfig.model })
 
     const configLoader = new YamlConfigLoader(_vcsProvider)
     const eventBus = new LogEventBus()

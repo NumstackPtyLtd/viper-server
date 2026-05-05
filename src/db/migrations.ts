@@ -130,6 +130,54 @@ const MIGRATIONS = [
       );
     `,
   },
+  {
+    version: 3,
+    description: 'Wiki decoupling + policies',
+    up: `
+      CREATE TABLE wiki_entries_new (
+        id TEXT PRIMARY KEY,
+        owner_type TEXT NOT NULL DEFAULT 'org',
+        owner_id TEXT NOT NULL,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'general',
+        tags TEXT NOT NULL DEFAULT '[]',
+        match_count INTEGER NOT NULL DEFAULT 0,
+        last_matched_at TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+
+      INSERT INTO wiki_entries_new (id, owner_type, owner_id, title, content, category, tags, match_count, last_matched_at, created_at, updated_at)
+      SELECT id, 'org', org_id, title, content, category, tags, match_count, last_matched_at, created_at, updated_at
+      FROM wiki_entries;
+
+      DROP TABLE wiki_entries;
+      ALTER TABLE wiki_entries_new RENAME TO wiki_entries;
+
+      CREATE TABLE IF NOT EXISTS policies (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        resource_type TEXT NOT NULL,
+        resource_id TEXT,
+        target_type TEXT NOT NULL,
+        target_id TEXT,
+        effect TEXT NOT NULL DEFAULT 'enforce',
+        priority INTEGER NOT NULL DEFAULT 0,
+        conditions TEXT NOT NULL DEFAULT '{}',
+        enabled INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+
+      CREATE INDEX idx_policies_org ON policies(org_id);
+      CREATE INDEX idx_policies_target ON policies(org_id, target_type, target_id);
+      CREATE INDEX idx_policies_resource ON policies(org_id, resource_type, resource_id);
+      CREATE INDEX idx_policies_lookup ON policies(org_id, resource_type, target_type, target_id, enabled);
+    `,
+  },
 ]
 
 export function runMigrations(db: Database.Database): void {

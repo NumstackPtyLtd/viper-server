@@ -17,6 +17,7 @@ import { connectionRoutes } from './presentation/api/routes/connections.js'
 import { projectRoutes } from './presentation/api/routes/projects.js'
 import { wikiRoutes } from './presentation/api/routes/wiki.js'
 import { reviewConfigRoutes } from './presentation/api/routes/reviewConfigs.js'
+import { policyRoutes } from './presentation/api/routes/policies.js'
 import { randomUUID } from 'crypto'
 import { ReviewMergeRequest } from './application/use-cases/ReviewMergeRequest.js'
 import { RespondToDiscussion } from './application/use-cases/RespondToDiscussion.js'
@@ -70,6 +71,7 @@ export function createApp(container: Container, options?: AppOptions): Hono {
   app.route('/', projectRoutes({ projects: container.projects, getOrgId }))
   app.route('/', wikiRoutes({ wiki: container.wiki, getOrgId }))
   app.route('/', reviewConfigRoutes({ reviewConfigs: container.reviewConfigs, getOrgId }))
+  app.route('/', policyRoutes({ policies: container.policies, wiki: container.wiki, policyResolver: container.policyResolver, getOrgId }))
 
   // Settings routes last (catch-all /api/settings/:key)
   app.route('/', settingsRoutes({ settings: container.settings }))
@@ -112,7 +114,7 @@ export function createApp(container: Container, options?: AppOptions): Hono {
         const aiReviewer = aiPlugin.createReviewer({ apiKey: orgToken.api_key, model: orgToken.model ?? undefined })
         const configLoader = new YamlConfigLoader(container.vcsProvider)
         const eventBus = new LogEventBus()
-        useCaseReview = new ReviewMergeRequest(container.vcsProvider, aiReviewer, configLoader, eventBus)
+        useCaseReview = new ReviewMergeRequest(container.vcsProvider, aiReviewer, configLoader, eventBus, container.policyResolver, container.wiki)
         useCaseDiscussion = new RespondToDiscussion(container.vcsProvider, aiReviewer, configLoader)
         logger.info({ org: orgId, provider: orgToken.provider }, 'Using org AI token')
       } catch {
@@ -138,6 +140,7 @@ export function createApp(container: Container, options?: AppOptions): Hono {
             const review = await useCaseReview.execute({
               projectId: mr.projectId, mrIid: mr.iid, title: mr.title,
               description: mr.description, sourceBranch: mr.sourceBranch, targetBranch: mr.targetBranch,
+              orgId, internalProjectId: project?.id ?? undefined,
             })
 
             // Persist to DB

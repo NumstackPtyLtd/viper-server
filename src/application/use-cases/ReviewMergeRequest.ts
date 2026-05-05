@@ -8,7 +8,9 @@ import type { VcsProvider } from "viper-vcs-providers";
 import type { AiReviewer } from "viper-ai-providers";
 import type { ConfigLoader } from "../../domain/ports/ConfigLoader.js";
 import type { EventBus } from "../../domain/ports/EventBus.js";
+import type { WikiRepository } from "../../domain/ports/WikiRepository.js";
 import type { ReviewMergeRequestDTO } from "../dto/ReviewMergeRequestDTO.js";
+import type { PolicyResolver } from "../services/PolicyResolver.js";
 import { DiffFormatter } from "../services/DiffFormatter.js";
 import { CommentFormatter } from "../services/CommentFormatter.js";
 
@@ -17,7 +19,9 @@ export class ReviewMergeRequest {
     private readonly vcs: VcsProvider,
     private readonly ai: AiReviewer,
     private readonly configLoader: ConfigLoader,
-    private readonly eventBus: EventBus
+    private readonly eventBus: EventBus,
+    private readonly policyResolver: PolicyResolver | null = null,
+    private readonly wiki: WikiRepository | null = null
   ) {}
 
   async execute(dto: ReviewMergeRequestDTO): Promise<Review> {
@@ -36,12 +40,35 @@ export class ReviewMergeRequest {
 
     const diffText = DiffFormatter.format(filteredFiles);
 
+    // 2b. Resolve wiki entries via policies
+    const matchedWikiIds: string[] = [];
+    let rules = config.rules;
+    if (this.policyResolver && dto.orgId && dto.internalProjectId) {
+      const changedFiles = filteredFiles.map((f) => f.newPath);
+      const resolved = this.policyResolver.resolveWikiForReview(
+        dto.orgId, dto.internalProjectId, changedFiles
+      );
+      if (resolved.length > 0) {
+        const MAX_WIKI_CHARS = 8000;
+        let wikiContext = '';
+        for (const r of resolved) {
+          const section = `## ${r.entry.title}\n${r.entry.content}`;
+          if (wikiContext.length + section.length > MAX_WIKI_CHARS) break;
+          wikiContext += (wikiContext ? '\n\n---\n\n' : '') + section;
+          matchedWikiIds.push(r.entry.id);
+        }
+        if (wikiContext) {
+          rules = [...config.rules, `\n--- Wiki Knowledge Base ---\n${wikiContext}`];
+        }
+      }
+    }
+
     // 3. Ask AI to review
     const aiResult = await this.ai.review({
       diff: diffText,
       mrTitle: dto.title,
       mrDescription: dto.description,
-      customRules: config.rules,
+      customRules: rules,
       focusAreas: config.style.focus,
       tone: config.style.tone,
       language: config.style.language,
@@ -102,6 +129,11 @@ export class ReviewMergeRequest {
 
     // 7. Publish domain events
     await this.eventBus.publishAll(review.pullDomainEvents());
+
+    // 8. Update wiki match counts
+    if (matchedWikiIds.length > 0 && this.wiki) {
+      this.wiki.incrementMatchCount(matchedWikiIds);
+    }
 
     return review;
   }

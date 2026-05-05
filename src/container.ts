@@ -3,6 +3,13 @@ import { YamlConfigLoader } from './infrastructure/config/YamlConfigLoader.js'
 import { LogEventBus } from './infrastructure/events/LogEventBus.js'
 import { NoOpTenantService } from './infrastructure/tenant/NoOpTenantService.js'
 import { SqliteSettingsRepository } from './infrastructure/persistence/SqliteSettingsRepository.js'
+import { SqliteUserRepository } from './infrastructure/persistence/SqliteUserRepository.js'
+import { SqliteReviewRepository } from './infrastructure/persistence/SqliteReviewRepository.js'
+import { SqliteTokenRepository } from './infrastructure/persistence/SqliteTokenRepository.js'
+import { SqliteConnectionRepository } from './infrastructure/persistence/SqliteConnectionRepository.js'
+import { SqliteProjectRepository } from './infrastructure/persistence/SqliteProjectRepository.js'
+import { SqliteWikiRepository } from './infrastructure/persistence/SqliteWikiRepository.js'
+import { SqliteReviewConfigRepository } from './infrastructure/persistence/SqliteReviewConfigRepository.js'
 import { getDatabase } from './db/database.js'
 import { ReviewMergeRequest } from './application/use-cases/ReviewMergeRequest.js'
 import { RespondToDiscussion } from './application/use-cases/RespondToDiscussion.js'
@@ -22,9 +29,16 @@ export function createContainer(options?: ContainerOptions) {
   const env = loadEnvConfig()
   const tenantService: TenantService = options?.tenantService ?? new NoOpTenantService()
 
-  // Database + settings (always available — even before providers are configured)
+  // Database + repositories (always available — even before providers are configured)
   const db = getDatabase(env.DATABASE_PATH)
   const settings = new SqliteSettingsRepository(db)
+  const users = new SqliteUserRepository(db)
+  const reviews = new SqliteReviewRepository(db)
+  const tokens = new SqliteTokenRepository(db)
+  const connections = new SqliteConnectionRepository(db)
+  const projects = new SqliteProjectRepository(db)
+  const wiki = new SqliteWikiRepository(db)
+  const reviewConfigs = new SqliteReviewConfigRepository(db)
 
   // Lazy-resolved providers — only created when settings exist
   let _vcsPlugin: VcsPlugin | null = null
@@ -103,6 +117,13 @@ export function createContainer(options?: ContainerOptions) {
   return {
     env,
     settings,
+    users,
+    reviews,
+    tokens,
+    connections,
+    projects,
+    wiki,
+    reviewConfigs,
     tenantService,
     vcsRegistry,
     aiRegistry,

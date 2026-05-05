@@ -17,6 +17,7 @@ import { connectionRoutes } from './presentation/api/routes/connections.js'
 import { projectRoutes } from './presentation/api/routes/projects.js'
 import { wikiRoutes } from './presentation/api/routes/wiki.js'
 import { reviewConfigRoutes } from './presentation/api/routes/reviewConfigs.js'
+import { githubAppRoutes } from './presentation/api/routes/github-app.js'
 
 const DEFAULT_ORG_ID = 'default'
 
@@ -57,6 +58,7 @@ export function createApp(container: Container, options?: AppOptions): Hono {
   // Cloud overlay replaces this via auth middleware (user's org from JWT).
   const getOrgId = options?.getOrgId ?? (() => DEFAULT_ORG_ID)
 
+  app.route('/', githubAppRoutes({ settings: container.settings }))
   app.route('/', reviewRoutes({ reviews: container.reviews, getOrgId }))
   app.route('/', tokenRoutes({ tokens: container.tokens, getOrgId }))
   app.route('/', connectionRoutes({ connections: container.connections, getOrgId }))

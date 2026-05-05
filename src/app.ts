@@ -5,6 +5,7 @@
  * After setup: webhooks active, / redirects to /health.
  */
 import { Hono } from 'hono'
+import { serveStatic } from '@hono/node-server/serve-static'
 import type { Container } from './container.js'
 import { healthRoutes } from './presentation/api/routes/health.js'
 import { webhookRoutes } from './presentation/api/routes/webhook.js'
@@ -19,6 +20,9 @@ export function createApp(container: Container): Hono {
     return c.json({ error: 'Internal Server Error' }, 500)
   })
 
+  // Static assets (fonts, favicon)
+  app.use('/public/*', serveStatic({ root: './' }))
+
   // Root — redirect to setup if unconfigured
   app.get('/', (c) => {
     return c.redirect(container.configured ? '/health' : '/setup')
@@ -28,11 +32,7 @@ export function createApp(container: Container): Hono {
   app.route('/', healthRoutes())
   app.route('/', settingsRoutes({ settings: container.settings }))
   app.route('/', setupRoutes({
-    settings: container.settings,
     isConfigured: () => container.configured,
-    reload: () => container.reload(),
-    vcsSchemas: () => container.vcsRegistry.schemas(),
-    aiSchemas: () => container.aiRegistry.schemas() as Array<{ type: string; name: string; models: Array<{ id: string; label: string; default?: boolean }> }>,
   }))
 
   // Provider discovery

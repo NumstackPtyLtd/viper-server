@@ -35,23 +35,58 @@ export function createContainer(options?: ContainerOptions) {
 
   function resolveProviders(): { configured: boolean } {
     const vcsType = settings.get('vcs_provider_type')
-    const vcsToken = settings.get('vcs_token')
-    const vcsUrl = settings.get('vcs_url')
     const aiType = settings.get('ai_provider_type')
-    const aiApiKey = settings.get('ai_api_key')
-    const aiModel = settings.get('ai_model')
-
     const webhookSecret = settings.get('webhook_secret')
 
-    if (!vcsType || !vcsToken || !vcsUrl || !aiType || !aiApiKey || !webhookSecret) {
+    if (!vcsType || !aiType || !webhookSecret) {
       return { configured: false }
     }
 
+    // Collect all vcs_* and ai_* settings, strip prefix, pass to plugin
+    const allSettings = settings.all()
+    const vcsConfig: Record<string, string> = {}
+    const aiConfig: Record<string, string> = {}
+    for (const { key, value } of allSettings) {
+      if (key.startsWith('vcs_') && key !== 'vcs_provider_type') {
+        vcsConfig[key.slice(4)] = value
+      }
+      if (key.startsWith('ai_') && key !== 'ai_provider_type') {
+        aiConfig[key.slice(3)] = value
+      }
+    }
+
+    // Validate required fields from plugin schema
     _vcsPlugin = vcsRegistry.get(vcsType)
-    _vcsProvider = _vcsPlugin.createProvider({ token: vcsToken, url: vcsUrl })
+    const missingVcs = _vcsPlugin.configSchema
+      .filter((f) => f.required && !vcsConfig[f.name] && !f.defaultValue)
+      .map((f) => f.name)
+    if (missingVcs.length > 0) {
+      _vcsPlugin = null
+      return { configured: false }
+    }
+
+    // Apply defaults from schema
+    for (const f of _vcsPlugin.configSchema) {
+      if (!vcsConfig[f.name] && f.defaultValue) vcsConfig[f.name] = f.defaultValue
+    }
+
+    _vcsProvider = _vcsPlugin.createProvider(vcsConfig)
 
     const aiPlugin = aiRegistry.get(aiType)
-    _aiReviewer = aiPlugin.createReviewer({ apiKey: aiApiKey, model: aiModel ?? undefined })
+    const missingAi = aiPlugin.configSchema
+      .filter((f) => f.required && !aiConfig[f.name] && !f.defaultValue)
+      .map((f) => f.name)
+    if (missingAi.length > 0) {
+      _vcsPlugin = null
+      _vcsProvider = null
+      return { configured: false }
+    }
+
+    for (const f of aiPlugin.configSchema) {
+      if (!aiConfig[f.name] && f.defaultValue) aiConfig[f.name] = f.defaultValue
+    }
+
+    _aiReviewer = aiPlugin.createReviewer({ apiKey: aiConfig.api_key ?? aiConfig.apiKey ?? '', model: aiConfig.model })
 
     const configLoader = new YamlConfigLoader(_vcsProvider)
     const eventBus = new LogEventBus()

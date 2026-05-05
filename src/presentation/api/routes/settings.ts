@@ -5,7 +5,7 @@ interface SettingsRouteDeps {
   settings: SettingsRepository
 }
 
-const SECRET_KEYS = new Set(['vcs_token', 'ai_api_key', 'webhook_secret'])
+const SECRET_KEYS = new Set(['vcs_token', 'vcs_private_key', 'ai_api_key', 'webhook_secret'])
 
 export function settingsRoutes(deps: SettingsRouteDeps): Hono {
   const app = new Hono()

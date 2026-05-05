@@ -3,9 +3,7 @@ import { z } from "zod";
 const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
-  WEBHOOK_SECRET: z.string().min(1, "WEBHOOK_SECRET is required"),
   DATABASE_PATH: z.string().default("./data/viper.db"),
-  BOT_USER_ID: z.coerce.number().optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

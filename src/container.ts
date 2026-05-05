@@ -41,7 +41,9 @@ export function createContainer(options?: ContainerOptions) {
     const aiApiKey = settings.get('ai_api_key')
     const aiModel = settings.get('ai_model')
 
-    if (!vcsType || !vcsToken || !vcsUrl || !aiType || !aiApiKey) {
+    const webhookSecret = settings.get('webhook_secret')
+
+    if (!vcsType || !vcsToken || !vcsUrl || !aiType || !aiApiKey || !webhookSecret) {
       return { configured: false }
     }
 
@@ -61,7 +63,7 @@ export function createContainer(options?: ContainerOptions) {
   }
 
   // Try resolving on startup (won't crash if not configured)
-  const { configured } = resolveProviders()
+  let _configured = resolveProviders().configured
 
   return {
     env,
@@ -69,10 +71,17 @@ export function createContainer(options?: ContainerOptions) {
     tenantService,
     vcsRegistry,
     aiRegistry,
-    configured,
+
+    get configured(): boolean {
+      return _configured
+    },
 
     /** Re-read settings and rebuild providers. Call after PUT /api/settings. */
-    reload: resolveProviders,
+    reload(): { configured: boolean } {
+      const result = resolveProviders()
+      _configured = result.configured
+      return result
+    },
 
     get vcsPlugin(): VcsPlugin {
       if (!_vcsPlugin) throw new Error('VCS provider not configured')

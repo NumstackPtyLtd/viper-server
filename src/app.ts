@@ -60,7 +60,7 @@ export function createApp(container: Container, options?: AppOptions): Hono {
 
   app.route('/', githubAppRoutes({ settings: container.settings }))
   app.route('/', reviewRoutes({ reviews: container.reviews, getOrgId }))
-  app.route('/', tokenRoutes({ tokens: container.tokens, getOrgId }))
+  app.route('/', tokenRoutes({ tokens: container.tokens, getOrgId, aiRegistry: container.aiRegistry as any }))
   app.route('/', connectionRoutes({ connections: container.connections, getOrgId }))
   app.route('/', projectRoutes({ projects: container.projects, getOrgId }))
   app.route('/', wikiRoutes({ wiki: container.wiki, getOrgId }))

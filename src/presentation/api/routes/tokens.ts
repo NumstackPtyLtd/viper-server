@@ -2,7 +2,12 @@ import { Hono } from 'hono'
 import { randomUUID } from 'crypto'
 import type { TokenRepository } from '../../../domain/ports/TokenRepository.js'
 
-interface Deps { tokens: TokenRepository; getOrgId: () => string }
+interface AiRegistry {
+  get(type: string): { verifyKey(apiKey: string): Promise<{ valid: boolean; error?: string }> }
+  has(type: string): boolean
+}
+
+interface Deps { tokens: TokenRepository; getOrgId: () => string; aiRegistry?: AiRegistry }
 
 export function tokenRoutes(deps: Deps): Hono {
   const app = new Hono()
@@ -19,6 +24,20 @@ export function tokenRoutes(deps: Deps): Hono {
 
   app.post('/api/tokens', async (c) => {
     const body = await c.req.json()
+
+    // Verify the key before saving
+    if (deps.aiRegistry && body.provider && body.api_key) {
+      try {
+        const plugin = deps.aiRegistry.get(body.provider)
+        const result = await plugin.verifyKey(body.api_key)
+        if (!result.valid) {
+          return c.json({ error: result.error ?? 'Invalid API key' }, 400)
+        }
+      } catch {
+        // Provider not found or verify not supported — save anyway
+      }
+    }
+
     const id = randomUUID()
     if (body.is_default) deps.tokens.clearDefaults(deps.getOrgId())
     deps.tokens.create({

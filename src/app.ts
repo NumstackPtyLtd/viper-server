@@ -20,7 +20,12 @@ import { reviewConfigRoutes } from './presentation/api/routes/reviewConfigs.js'
 
 const DEFAULT_ORG_ID = 'default'
 
-export function createApp(container: Container): Hono {
+export interface AppOptions {
+  /** Override org resolution. Cloud passes JWT-based resolver. */
+  getOrgId?: () => string
+}
+
+export function createApp(container: Container, options?: AppOptions): Hono {
   const app = new Hono()
 
   app.onError((err, c) => {
@@ -50,7 +55,7 @@ export function createApp(container: Container): Hono {
   // --- Data routes (org-scoped) ---
   // In OSS single-tenant mode, getOrgId returns DEFAULT_ORG_ID.
   // Cloud overlay replaces this via auth middleware (user's org from JWT).
-  const getOrgId = () => DEFAULT_ORG_ID
+  const getOrgId = options?.getOrgId ?? (() => DEFAULT_ORG_ID)
 
   app.route('/', reviewRoutes({ reviews: container.reviews, getOrgId }))
   app.route('/', tokenRoutes({ tokens: container.tokens, getOrgId }))

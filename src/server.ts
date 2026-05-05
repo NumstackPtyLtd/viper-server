@@ -5,7 +5,7 @@
  *   import { createContainer, createApp } from 'viper-server/server'
  */
 export { createContainer, type Container } from './container.js'
-export { createApp } from './app.js'
+export { createApp, type AppOptions } from './app.js'
 export { loadEnvConfig, type EnvConfig } from './infrastructure/config/EnvConfig.js'
 export { getDatabase } from './db/database.js'
 

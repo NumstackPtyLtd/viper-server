@@ -7,12 +7,12 @@ interface Deps { reviewConfigs: ReviewConfigRepository; getOrgId: () => string }
 export function reviewConfigRoutes(deps: Deps): Hono {
   const app = new Hono()
 
-  app.get('/api/review-config', (c) => {
+  app.get('/api/settings/review', (c) => {
     const configs = deps.reviewConfigs.list(deps.getOrgId()).map(parseJsonFields)
     return c.json({ configs })
   })
 
-  app.post('/api/review-config', async (c) => {
+  app.post('/api/settings/review', async (c) => {
     const body = await c.req.json()
     const id = randomUUID()
     deps.reviewConfigs.create({
@@ -28,7 +28,7 @@ export function reviewConfigRoutes(deps: Deps): Hono {
     return c.json({ status: 'ok', id })
   })
 
-  app.put('/api/review-config/:id', async (c) => {
+  app.put('/api/settings/review/:id', async (c) => {
     const body = await c.req.json()
     const data: Record<string, unknown> = {}
     if (body.tone !== undefined) data.tone = body.tone

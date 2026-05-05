@@ -41,7 +41,6 @@ export function createApp(container: Container, options?: AppOptions): Hono {
 
   // Always available
   app.route('/', healthRoutes())
-  app.route('/', settingsRoutes({ settings: container.settings }))
   app.route('/', setupRoutes({ isConfigured: () => container.configured }))
 
   // Provider discovery
@@ -63,6 +62,9 @@ export function createApp(container: Container, options?: AppOptions): Hono {
   app.route('/', projectRoutes({ projects: container.projects, getOrgId }))
   app.route('/', wikiRoutes({ wiki: container.wiki, getOrgId }))
   app.route('/', reviewConfigRoutes({ reviewConfigs: container.reviewConfigs, getOrgId }))
+
+  // Settings routes last (catch-all /api/settings/:key)
+  app.route('/', settingsRoutes({ settings: container.settings }))
 
   // Webhook
   app.post('/webhook', async (c) => {

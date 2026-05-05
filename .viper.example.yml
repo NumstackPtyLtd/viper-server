@@ -1,0 +1,20 @@
+version: 1
+
+review:
+  style:
+    tone: friendly              # strict | friendly | concise
+    focus:
+      - security
+      - performance
+    language: English
+
+  rules:
+    - "Never use `any` type"
+    - "Prefer early returns"
+
+  ignore:
+    - "*.lock"
+    - "dist/**"
+
+  max_comments: 20
+  auto_resolve: true

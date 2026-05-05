@@ -17,7 +17,12 @@ export class PolicyResolver {
   ) {}
 
   resolveWikiForReview(orgId: string, projectId: string, changedFiles: string[]): ResolvedWiki[] {
-    const policies = this.policies.findForTarget(orgId, 'project', projectId, 'wiki')
+    let policies: PolicyRow[]
+    try {
+      policies = this.policies.findForTarget(orgId, 'project', projectId, 'wiki')
+    } catch {
+      return []
+    }
     const applicable = policies.filter((p) => this.matchesConditions(p, changedFiles))
 
     const denied = new Set<string>()
@@ -35,7 +40,12 @@ export class PolicyResolver {
     }
 
     const wikiIds = Array.from(wikiPolicyMap.keys())
-    const entries = this.wiki.getByIds(wikiIds)
+    let entries: WikiRow[]
+    try {
+      entries = this.wiki.getByIds(wikiIds)
+    } catch {
+      return []
+    }
     const entryMap = new Map(entries.map((e) => [e.id, e]))
 
     const result: ResolvedWiki[] = []

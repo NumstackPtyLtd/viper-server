@@ -46,6 +46,11 @@ export function policyRoutes(deps: Deps): Hono {
 
   app.post('/api/policies', async (c) => {
     const body = await c.req.json()
+    if (!body.name || typeof body.name !== 'string') return c.json({ error: 'name is required' }, 400)
+    if (!body.resource_type || typeof body.resource_type !== 'string') return c.json({ error: 'resource_type is required' }, 400)
+    if (!body.target_type || typeof body.target_type !== 'string') return c.json({ error: 'target_type is required' }, 400)
+    const VALID_EFFECTS = ['enforce', 'suggest', 'deny']
+    if (body.effect && !VALID_EFFECTS.includes(body.effect)) return c.json({ error: `effect must be one of: ${VALID_EFFECTS.join(', ')}` }, 400)
     const id = randomUUID()
     deps.policies.create({
       id,

@@ -175,6 +175,7 @@ const MIGRATIONS = [
       CREATE INDEX idx_policies_org ON policies(org_id);
       CREATE INDEX idx_policies_target ON policies(org_id, target_type, target_id);
       CREATE INDEX idx_policies_resource ON policies(org_id, resource_type, resource_id);
+      CREATE INDEX idx_policies_lookup ON policies(org_id, resource_type, target_type, target_id, enabled);
     `,
   },
 ]

@@ -49,11 +49,17 @@ export class ReviewMergeRequest {
         dto.orgId, dto.internalProjectId, changedFiles
       );
       if (resolved.length > 0) {
-        const wikiContext = resolved
-          .map((r) => `## ${r.entry.title}\n${r.entry.content}`)
-          .join('\n\n---\n\n');
-        rules = [...config.rules, `\n--- Wiki Knowledge Base ---\n${wikiContext}`];
-        matchedWikiIds.push(...resolved.map((r) => r.entry.id));
+        const MAX_WIKI_CHARS = 8000;
+        let wikiContext = '';
+        for (const r of resolved) {
+          const section = `## ${r.entry.title}\n${r.entry.content}`;
+          if (wikiContext.length + section.length > MAX_WIKI_CHARS) break;
+          wikiContext += (wikiContext ? '\n\n---\n\n' : '') + section;
+          matchedWikiIds.push(r.entry.id);
+        }
+        if (wikiContext) {
+          rules = [...config.rules, `\n--- Wiki Knowledge Base ---\n${wikiContext}`];
+        }
       }
     }
 

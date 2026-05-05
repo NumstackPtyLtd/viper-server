@@ -7,6 +7,8 @@
  */
 import { Hono } from 'hono'
 import type { Container } from './container.js'
+import { healthRoutes } from './presentation/api/routes/health.js'
+import { webhookRoutes } from './presentation/api/routes/webhook.js'
 
 export function createApp(container: Container): Hono {
   const app = new Hono()
@@ -16,9 +18,26 @@ export function createApp(container: Container): Hono {
     return c.json({ error: 'Internal Server Error' }, 500)
   })
 
-  // Mount route modules
-  app.route('/', container.healthRoutes)
-  app.route('/', container.webhookRoutes)
+  // Health
+  app.route('/', healthRoutes())
+
+  // Webhook (VCS-agnostic — uses vcsPlugin from container)
+  app.route('/', webhookRoutes({
+    reviewMergeRequest: container.reviewMergeRequest,
+    respondToDiscussion: container.respondToDiscussion,
+    vcsPlugin: container.vcsPlugin,
+    botUserId: container.env.BOT_USER_ID ?? null,
+    webhookSecret: container.env.WEBHOOK_SECRET,
+  }))
+
+  // Provider discovery endpoints
+  app.get('/api/vcs/types', (c) => {
+    return c.json({ providers: container.vcsRegistry.schemas() })
+  })
+
+  app.get('/api/ai/types', (c) => {
+    return c.json({ providers: container.aiRegistry.schemas() })
+  })
 
   return app
 }

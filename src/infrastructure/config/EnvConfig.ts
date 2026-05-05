@@ -2,13 +2,23 @@ import { z } from "zod";
 
 const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
-  GITLAB_URL: z.string().default("https://gitlab.com"),
-  GITLAB_TOKEN: z.string().min(1, "GITLAB_TOKEN is required"),
-  GITLAB_WEBHOOK_SECRET: z.string().min(1, "GITLAB_WEBHOOK_SECRET is required"),
-  ANTHROPIC_API_KEY: z.string().min(1, "ANTHROPIC_API_KEY is required"),
-  ANTHROPIC_MODEL: z.string().default("claude-sonnet-4-20250514"),
-  BOT_USER_ID: z.coerce.number().optional(),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
+
+  // Provider selection
+  VCS_PROVIDER: z.string().min(1, "VCS_PROVIDER is required"),
+  AI_PROVIDER: z.string().min(1, "AI_PROVIDER is required"),
+
+  // VCS config (provider-agnostic)
+  VCS_URL: z.string().min(1, "VCS_URL is required"),
+  VCS_TOKEN: z.string().min(1, "VCS_TOKEN is required"),
+  WEBHOOK_SECRET: z.string().min(1, "WEBHOOK_SECRET is required"),
+
+  // AI config (provider-agnostic)
+  AI_API_KEY: z.string().min(1, "AI_API_KEY is required"),
+  AI_MODEL: z.string().optional(),
+
+  // Optional
+  BOT_USER_ID: z.coerce.number().optional(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

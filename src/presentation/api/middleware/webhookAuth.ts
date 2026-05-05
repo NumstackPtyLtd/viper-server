@@ -1,12 +1,20 @@
 import type { MiddlewareHandler } from "hono";
+import type { VcsPlugin } from "../../../application/ports/VcsPlugin.js";
 import { logger } from "../../../shared/logger.js";
 
-export function webhookAuth(secret: string): MiddlewareHandler {
+/**
+ * VCS-agnostic webhook auth middleware.
+ * Delegates header validation to the active VCS plugin.
+ */
+export function webhookAuth(vcsPlugin: VcsPlugin, secret: string): MiddlewareHandler {
   return async (c, next) => {
-    const token = c.req.header("X-Gitlab-Token");
+    const headers: Record<string, string | undefined> = {}
+    c.req.raw.headers.forEach((value, key) => {
+      headers[key.toLowerCase()] = value
+    })
 
-    if (token !== secret) {
-      logger.warn("Webhook request with invalid secret token");
+    if (!vcsPlugin.validateWebhookAuth(headers, secret)) {
+      logger.warn({ provider: vcsPlugin.type }, "Webhook request with invalid auth");
       return c.json({ error: "Unauthorized" }, 401);
     }
 

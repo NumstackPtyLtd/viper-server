@@ -39,7 +39,7 @@ export class ClaudeAiReviewer implements AiReviewer {
 
   constructor(
     private readonly apiKey: string,
-    private readonly model: string = "claude-sonnet-4-20250514"
+    private readonly model: string
   ) {
     this.client = new Anthropic({ apiKey });
   }

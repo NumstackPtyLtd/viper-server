@@ -10,7 +10,7 @@ import { logger } from "../../../shared/logger.js";
 export class GitLabVcsProvider implements VcsProvider {
   constructor(
     private readonly token: string,
-    private readonly baseUrl: string = "https://gitlab.com"
+    private readonly baseUrl: string
   ) {}
 
   async getMergeRequestDiff(projectId: number, mrIid: number): Promise<DiffFile[]> {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { YamlConfigLoader } from './YamlConfigLoader.js'
-import type { VcsProvider } from '../../domain/ports/VcsProvider.js'
+import type { VcsProvider } from 'viper-vcs-providers'
 
 function mockVcs(fileContent: string | null = null): VcsProvider {
   return {

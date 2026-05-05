@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { Hono } from 'hono'
 import { webhookAuth } from './webhookAuth.js'
-import type { VcsPlugin } from '../../../application/ports/VcsPlugin.js'
+import type { VcsPlugin } from 'viper-vcs-providers'
 
-function mockVcsPlugin(authHeader = 'x-gitlab-token'): VcsPlugin {
+function mockVcsPlugin(authHeader = 'x-webhook-token'): VcsPlugin {
   return {
     type: 'test',
     name: 'Test',
@@ -30,7 +30,7 @@ describe('webhookAuth', () => {
   it('allows request with valid token', async () => {
     const res = await app.request('/webhook', {
       method: 'POST',
-      headers: { 'x-gitlab-token': secret },
+      headers: { 'x-webhook-token': secret },
     })
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ ok: true })
@@ -39,7 +39,7 @@ describe('webhookAuth', () => {
   it('rejects request with invalid token', async () => {
     const res = await app.request('/webhook', {
       method: 'POST',
-      headers: { 'x-gitlab-token': 'wrong' },
+      headers: { 'x-webhook-token': 'wrong' },
     })
     expect(res.status).toBe(401)
   })

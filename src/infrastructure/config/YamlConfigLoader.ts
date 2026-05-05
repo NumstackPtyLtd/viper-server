@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { parse as parseYaml } from "yaml";
 import type { ConfigLoader, ViperReviewConfig } from "../../domain/ports/ConfigLoader.js";
-import type { VcsProvider } from "../../domain/ports/VcsProvider.js";
+import type { VcsProvider } from "viper-vcs-providers";
 import { logger } from "../../shared/logger.js";
 
 const reviewStyleSchema = z.object({

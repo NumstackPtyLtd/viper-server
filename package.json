@@ -17,15 +17,18 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
     "@hono/node-server": "^1.13.0",
+    "better-sqlite3": "^11.9.1",
     "hono": "^4.6.0",
-    "yaml": "^2.6.0",
-    "zod": "^3.24.0",
     "minimatch": "^10.0.0",
-    "pino": "^9.5.0"
+    "pino": "^9.5.0",
+    "viper-ai-providers": "file:../viper-ai-providers",
+    "viper-vcs-providers": "file:../viper-vcs-providers",
+    "yaml": "^2.6.0",
+    "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
     "@types/minimatch": "^5.1.0",
     "@types/node": "^22.0.0",
     "@vitest/coverage-v8": "^3.2.1",

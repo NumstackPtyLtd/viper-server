@@ -1,5 +1,5 @@
 import { minimatch } from "minimatch";
-import type { DiffFile } from "../../domain/ports/VcsProvider.js";
+import type { DiffFile } from "viper-vcs-providers";
 
 export class DiffFormatter {
   static filterIgnored(files: DiffFile[], ignorePatterns: string[]): DiffFile[] {

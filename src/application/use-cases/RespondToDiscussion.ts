@@ -1,5 +1,5 @@
-import type { VcsProvider } from "../../domain/ports/VcsProvider.js";
-import type { AiReviewer } from "../../domain/ports/AiReviewer.js";
+import type { VcsProvider } from "viper-vcs-providers";
+import type { AiReviewer } from "viper-ai-providers";
 import type { ConfigLoader } from "../../domain/ports/ConfigLoader.js";
 import type { RespondToDiscussionDTO } from "../dto/RespondToDiscussionDTO.js";
 

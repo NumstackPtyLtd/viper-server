@@ -8,6 +8,10 @@ export class SqliteProjectRepository implements ProjectRepository {
     return this.db.prepare('SELECT * FROM projects WHERE org_id = ? ORDER BY name ASC').all(orgId) as ProjectRow[]
   }
 
+  findByFullPath(fullPath: string): ProjectRow | null {
+    return this.db.prepare('SELECT * FROM projects WHERE full_path = ?').get(fullPath) as ProjectRow | undefined ?? null
+  }
+
   create(p: ProjectRow): void {
     this.db.prepare('INSERT INTO projects (id, org_id, connection_id, name, full_path, external_project_id, default_branch, language) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
       .run(p.id, p.org_id, p.connection_id, p.name, p.full_path, p.external_project_id, p.default_branch, p.language)

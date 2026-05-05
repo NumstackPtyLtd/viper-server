@@ -5,6 +5,7 @@ export interface TokenRow {
 
 export interface TokenRepository {
   list(orgId: string): TokenRow[]
+  getDefault(orgId: string): TokenRow | null
   create(token: TokenRow): void
   update(id: string, data: Partial<TokenRow>): void
   delete(id: string): void

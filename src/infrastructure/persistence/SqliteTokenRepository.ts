@@ -8,6 +8,12 @@ export class SqliteTokenRepository implements TokenRepository {
     return this.db.prepare('SELECT * FROM tokens WHERE org_id = ? ORDER BY created_at DESC').all(orgId) as TokenRow[]
   }
 
+  getDefault(orgId: string): TokenRow | null {
+    return this.db.prepare('SELECT * FROM tokens WHERE org_id = ? AND is_default = 1 LIMIT 1').get(orgId) as TokenRow | undefined
+      ?? this.db.prepare('SELECT * FROM tokens WHERE org_id = ? ORDER BY created_at ASC LIMIT 1').get(orgId) as TokenRow | undefined
+      ?? null
+  }
+
   create(t: TokenRow): void {
     this.db.prepare('INSERT INTO tokens (id, org_id, provider, api_key, model, label, is_default) VALUES (?, ?, ?, ?, ?, ?, ?)')
       .run(t.id, t.org_id, t.provider, t.api_key, t.model, t.label, t.is_default)

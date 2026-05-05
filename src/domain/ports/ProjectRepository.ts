@@ -6,6 +6,7 @@ export interface ProjectRow {
 
 export interface ProjectRepository {
   list(orgId: string): ProjectRow[]
+  findByFullPath(fullPath: string): ProjectRow | null
   create(project: ProjectRow): void
   delete(id: string): void
 }

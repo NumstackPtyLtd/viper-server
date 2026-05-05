@@ -17,6 +17,12 @@ import { connectionRoutes } from './presentation/api/routes/connections.js'
 import { projectRoutes } from './presentation/api/routes/projects.js'
 import { wikiRoutes } from './presentation/api/routes/wiki.js'
 import { reviewConfigRoutes } from './presentation/api/routes/reviewConfigs.js'
+import { ReviewMergeRequest } from './application/use-cases/ReviewMergeRequest.js'
+import { RespondToDiscussion } from './application/use-cases/RespondToDiscussion.js'
+import { YamlConfigLoader } from './infrastructure/config/YamlConfigLoader.js'
+import { LogEventBus } from './infrastructure/events/LogEventBus.js'
+import { registry as aiRegistry } from 'viper-ai-providers'
+import { logger } from './shared/logger.js'
 
 const DEFAULT_ORG_ID = 'default'
 
@@ -66,17 +72,59 @@ export function createApp(container: Container, options?: AppOptions): Hono {
   // Settings routes last (catch-all /api/settings/:key)
   app.route('/', settingsRoutes({ settings: container.settings }))
 
-  // Webhook
+  // Webhook — resolves AI reviewer from org token, falls back to server key
   app.post('/webhook', async (c) => {
     if (!container.configured) {
       return c.json({ error: 'Not configured. Visit /setup to get started.' }, 503)
     }
     const webhookSecret = container.settings.get('webhook_secret')
     if (!webhookSecret) return c.json({ error: 'webhook_secret not set.' }, 503)
+
+    // Parse the webhook to find which repo it's for
+    const rawBody = await c.req.raw.clone().text()
+    const body = JSON.parse(rawBody)
+    const event = container.vcsPlugin.parseWebhookPayload(body)
+
+    // Resolve org from project full_path
+    let repoFullName: string | undefined
+    if (body.repository?.full_name) repoFullName = body.repository.full_name
+    const project = repoFullName ? container.projects.findByFullPath(repoFullName) : null
+
+    // Build AI reviewer: prefer org's default token, fall back to server key
+    let reviewMergeRequest: ReviewMergeRequest
+    let respondToDiscussion: RespondToDiscussion
+
+    if (project) {
+      const orgToken = container.tokens.getDefault(project.org_id)
+      if (orgToken) {
+        try {
+          const aiPlugin = aiRegistry.get(orgToken.provider)
+          const aiReviewer = aiPlugin.createReviewer({ apiKey: orgToken.api_key, model: orgToken.model ?? undefined })
+          const configLoader = new YamlConfigLoader(container.vcsProvider)
+          const eventBus = new LogEventBus()
+          reviewMergeRequest = new ReviewMergeRequest(container.vcsProvider, aiReviewer, configLoader, eventBus)
+          respondToDiscussion = new RespondToDiscussion(container.vcsProvider, aiReviewer, configLoader)
+          logger.info({ org: project.org_id, provider: orgToken.provider }, 'Using org AI token')
+        } catch {
+          logger.warn({ org: project.org_id }, 'Failed to create AI reviewer from org token, falling back to server key')
+          reviewMergeRequest = container.reviewMergeRequest
+          respondToDiscussion = container.respondToDiscussion
+        }
+      } else {
+        logger.info({ org: project.org_id }, 'No org token, using server AI key')
+        reviewMergeRequest = container.reviewMergeRequest
+        respondToDiscussion = container.respondToDiscussion
+      }
+    } else {
+      logger.info({ repo: repoFullName }, 'Project not registered, using server AI key')
+      reviewMergeRequest = container.reviewMergeRequest
+      respondToDiscussion = container.respondToDiscussion
+    }
+
     const botUserId = container.settings.get('bot_user_id')
     const handler = webhookRoutes({
-      reviewMergeRequest: container.reviewMergeRequest,
-      respondToDiscussion: container.respondToDiscussion,
+      reviewMergeRequest,
+      respondToDiscussion,
       vcsPlugin: container.vcsPlugin,
       botUserId: botUserId ? Number(botUserId) : null,
       webhookSecret,

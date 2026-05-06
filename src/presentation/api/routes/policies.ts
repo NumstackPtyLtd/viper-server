@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { randomUUID } from 'crypto'
 import type { PolicyRepository } from '../../../domain/ports/PolicyRepository.js'
+import { LIMITS } from '../../../domain/value-objects/Limits.js'
 import type { WikiRepository } from '../../../domain/ports/WikiRepository.js'
 import type { PolicyResolver } from '../../../application/services/PolicyResolver.js'
 
@@ -47,6 +48,8 @@ export function policyRoutes(deps: Deps): Hono {
   app.post('/api/policies', async (c) => {
     const body = await c.req.json()
     if (!body.name || typeof body.name !== 'string') return c.json({ error: 'name is required' }, 400)
+    if (body.name.length > LIMITS.POLICY_NAME) return c.json({ error: `name must be ${LIMITS.POLICY_NAME} characters or fewer` }, 400)
+    if (body.description && typeof body.description === 'string' && body.description.length > LIMITS.POLICY_DESCRIPTION) return c.json({ error: `description must be ${LIMITS.POLICY_DESCRIPTION} characters or fewer` }, 400)
     if (!body.resource_type || typeof body.resource_type !== 'string') return c.json({ error: 'resource_type is required' }, 400)
     if (!body.target_type || typeof body.target_type !== 'string') return c.json({ error: 'target_type is required' }, 400)
     const VALID_EFFECTS = ['enforce', 'suggest', 'deny']
@@ -73,6 +76,8 @@ export function policyRoutes(deps: Deps): Hono {
 
   app.put('/api/policies/:id', async (c) => {
     const body = await c.req.json()
+    if (body.name !== undefined && typeof body.name === 'string' && body.name.length > LIMITS.POLICY_NAME) return c.json({ error: `name must be ${LIMITS.POLICY_NAME} characters or fewer` }, 400)
+    if (body.description !== undefined && typeof body.description === 'string' && body.description.length > LIMITS.POLICY_DESCRIPTION) return c.json({ error: `description must be ${LIMITS.POLICY_DESCRIPTION} characters or fewer` }, 400)
     const data: Record<string, unknown> = {}
     if (body.name !== undefined) data.name = body.name
     if (body.description !== undefined) data.description = body.description

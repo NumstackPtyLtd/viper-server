@@ -66,7 +66,7 @@ export function createApp(container: Container, options?: AppOptions): Hono {
   const getOrgId = options?.getOrgId ?? (() => DEFAULT_ORG_ID)
 
   app.route('/', reviewRoutes({ reviews: container.reviews, getOrgId }))
-  app.route('/', tokenRoutes({ tokens: container.tokens, getOrgId }))
+  app.route('/', tokenRoutes({ tokens: container.tokens, aiRegistry: container.aiRegistry, getOrgId }))
   app.route('/', connectionRoutes({ connections: container.connections, getOrgId }))
   app.route('/', projectRoutes({ projects: container.projects, getOrgId }))
   app.route('/', wikiRoutes({ wiki: container.wiki, getOrgId }))

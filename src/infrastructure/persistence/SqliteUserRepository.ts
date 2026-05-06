@@ -1,5 +1,5 @@
 import type Database from 'better-sqlite3'
-import type { UserRepository, UserRow, OrgRow } from '../../domain/ports/UserRepository.js'
+import type { UserRepository, UserRow, OrgRow, Theme } from '../../domain/ports/UserRepository.js'
 
 export class SqliteUserRepository implements UserRepository {
   constructor(private readonly db: Database.Database) {}
@@ -23,5 +23,9 @@ export class SqliteUserRepository implements UserRepository {
 
   getOrg(orgId: string): OrgRow | null {
     return this.db.prepare('SELECT * FROM organisations WHERE id = ?').get(orgId) as OrgRow | undefined ?? null
+  }
+
+  updateTheme(userId: string, theme: Theme): void {
+    this.db.prepare('UPDATE users SET theme = ? WHERE id = ?').run(theme, userId)
   }
 }

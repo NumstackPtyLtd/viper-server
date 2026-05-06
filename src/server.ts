@@ -16,7 +16,7 @@ export { SqliteUserRepository } from './infrastructure/persistence/SqliteUserRep
 // Ports
 export type { TenantService } from './application/ports/TenantService.js'
 export type { SettingsRepository } from './domain/ports/SettingsRepository.js'
-export type { UserRepository, UserRow, OrgRow } from './domain/ports/UserRepository.js'
+export type { UserRepository, UserRow, OrgRow, Theme } from './domain/ports/UserRepository.js'
 export { LIMITS } from './domain/value-objects/Limits.js'
 export type { WikiRepository, WikiRow } from './domain/ports/WikiRepository.js'
 export type { PolicyRepository, PolicyRow } from './domain/ports/PolicyRepository.js'

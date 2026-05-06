@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { randomUUID } from 'crypto'
 import type { WikiRepository } from '../../../domain/ports/WikiRepository.js'
+import { LIMITS } from '../../../domain/value-objects/Limits.js'
 
 interface Deps { wiki: WikiRepository; getOrgId: () => string }
 
@@ -45,6 +46,9 @@ export function wikiRoutes(deps: Deps): Hono {
 
   app.post('/api/wiki', async (c) => {
     const body = await c.req.json()
+    if (!body.title || typeof body.title !== 'string') return c.json({ error: 'title is required' }, 400)
+    if (body.title.length > LIMITS.WIKI_TITLE) return c.json({ error: `title must be ${LIMITS.WIKI_TITLE} characters or fewer` }, 400)
+    if (!body.content || typeof body.content !== 'string') return c.json({ error: 'content is required' }, 400)
     const id = randomUUID()
     deps.wiki.create({
       id,
@@ -60,6 +64,7 @@ export function wikiRoutes(deps: Deps): Hono {
 
   app.put('/api/wiki/:id', async (c) => {
     const body = await c.req.json()
+    if (body.title !== undefined && typeof body.title === 'string' && body.title.length > 120) return c.json({ error: 'title must be 120 characters or fewer' }, 400)
     const data: Record<string, unknown> = {}
     if (body.title !== undefined) data.title = body.title
     if (body.content !== undefined) data.content = body.content

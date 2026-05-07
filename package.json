@@ -1,29 +1,40 @@
 {
-  "name": "viper-server",
+  "name": "@supaproxy/viper-server",
   "version": "0.1.0",
   "description": "AI-powered code reviewer — open-source server",
   "type": "module",
-  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
-    "./server": "./src/server.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
+    }
   },
+  "files": ["dist"],
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "build:check": "tsc --noEmit",
     "start": "node --import tsx src/index.ts",
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.0",
+    "@supaproxy/viper-ai-providers": "^0.1.0",
+    "@supaproxy/viper-vcs-providers": "^0.1.0",
     "better-sqlite3": "^11.9.1",
     "hono": "^4.6.0",
     "minimatch": "^10.0.0",
     "pino": "^9.5.0",
-    "viper-ai-providers": "file:../viper-ai-providers",
-    "viper-vcs-providers": "file:../viper-vcs-providers",
     "yaml": "^2.6.0",
     "zod": "^3.24.0"
   },
@@ -36,5 +47,8 @@
     "typescript": "^5.7.0",
     "vitest": "^3.2.1"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
 }

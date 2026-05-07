@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from "hono";
-import type { VcsPlugin } from "viper-vcs-providers";
+import type { VcsPlugin } from "@supaproxy/viper-vcs-providers";
 import { logger } from "../../../shared/logger.js";
 
 /**

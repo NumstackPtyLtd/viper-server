@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ReviewMergeRequest } from './ReviewMergeRequest.js'
-import type { VcsProvider, DiffFile, DiffVersion } from 'viper-vcs-providers'
-import type { AiReviewer, AiReviewResult } from 'viper-ai-providers'
+import type { VcsProvider, DiffFile, DiffVersion } from '@supaproxy/viper-vcs-providers'
+import type { AiReviewer, AiReviewResult } from '@supaproxy/viper-ai-providers'
 import type { ConfigLoader, ViperReviewConfig } from '../../domain/ports/ConfigLoader.js'
 import type { EventBus } from '../../domain/ports/EventBus.js'
 

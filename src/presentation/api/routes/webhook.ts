@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { ReviewMergeRequest } from "../../../application/use-cases/ReviewMergeRequest.js";
 import type { RespondToDiscussion } from "../../../application/use-cases/RespondToDiscussion.js";
-import type { VcsPlugin, WebhookEvent } from "viper-vcs-providers";
+import type { VcsPlugin, WebhookEvent } from "@supaproxy/viper-vcs-providers";
 import { webhookAuth } from "../middleware/webhookAuth.js";
 import { logger } from "../../../shared/logger.js";
 

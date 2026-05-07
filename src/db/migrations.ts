@@ -178,6 +178,13 @@ const MIGRATIONS = [
       CREATE INDEX idx_policies_lookup ON policies(org_id, resource_type, target_type, target_id, enabled);
     `,
   },
+  {
+    version: 4,
+    description: 'User theme preference',
+    up: `
+      ALTER TABLE users ADD COLUMN theme TEXT NOT NULL DEFAULT 'system';
+    `,
+  },
 ]
 
 export function runMigrations(db: Database.Database): void {

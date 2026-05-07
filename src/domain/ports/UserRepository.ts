@@ -1,6 +1,8 @@
+export type Theme = 'light' | 'dark' | 'system'
+
 export interface UserRow {
   id: string; org_id: string; name: string; email: string
-  password_hash: string; role: string; created_at: string
+  password_hash: string; role: string; theme: Theme; created_at: string
 }
 
 export interface OrgRow {
@@ -13,4 +15,5 @@ export interface UserRepository {
   findByEmail(email: string): UserRow | null
   findById(id: string): UserRow | null
   getOrg(orgId: string): OrgRow | null
+  updateTheme(userId: string, theme: Theme): void
 }

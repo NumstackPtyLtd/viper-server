@@ -136,6 +136,20 @@ export function createApp(container: Container, options?: AppOptions): Hono {
       if (mr.action && reviewableActions.includes(mr.action)) {
         // Respond immediately, process async
         const doReview = async () => {
+          // Post pending check run
+          if (mr.headSha) {
+            try {
+              await container.vcsProvider.createCheckRun(mr.projectId, {
+                sha: mr.headSha,
+                status: 'in_progress',
+                title: 'Reviewing...',
+                summary: 'Viper is reviewing this pull request.',
+              })
+            } catch (err) {
+              logger.warn({ err }, 'Failed to create pending check run')
+            }
+          }
+
           try {
             const review = await useCaseReview.execute({
               projectId: mr.projectId, mrIid: mr.iid, title: mr.title,
@@ -145,17 +159,20 @@ export function createApp(container: Container, options?: AppOptions): Hono {
 
             // Persist to DB
             const findings = review.getFindings()
+            const criticalCount = findings.filter(f => f.getSeverity().isCritical()).length
+            const warningCount = findings.filter(f => f.getSeverity().toString() === 'warning').length
+            const suggestionCount = findings.filter(f => f.getSeverity().toString() === 'suggestion').length
+            const praiseCount = findings.filter(f => f.getSeverity().toString() === 'praise').length
+
             container.reviews.create({
               id: review.getId().toString(), org_id: orgId, project_id: project?.id ?? null,
               mr_iid: mr.iid, title: mr.title, description: mr.description,
               source_branch: mr.sourceBranch, target_branch: mr.targetBranch,
               author: String(mr.authorId), provider: container.vcsPlugin.type,
-              verdict: review.getCriticalCount() > 0 ? 'request_changes' : 'comment',
+              verdict: criticalCount > 0 ? 'request_changes' : 'comment',
               summary: review.getSummary(), findings_count: findings.length,
-              critical_count: findings.filter(f => f.getSeverity().isCritical()).length,
-              warning_count: findings.filter(f => f.getSeverity().toString() === 'warning').length,
-              suggestion_count: findings.filter(f => f.getSeverity().toString() === 'suggestion').length,
-              praise_count: findings.filter(f => f.getSeverity().toString() === 'praise').length,
+              critical_count: criticalCount, warning_count: warningCount,
+              suggestion_count: suggestionCount, praise_count: praiseCount,
               url: repoFullName ? `https://github.com/${repoFullName}/pull/${mr.iid}` : null,
               created_at: new Date().toISOString(),
             })
@@ -165,8 +182,45 @@ export function createApp(container: Container, options?: AppOptions): Hono {
               severity: f.getSeverity().toString(), comment: f.getComment(),
             })))
             logger.info({ reviewId: review.getId().toString(), findings: findings.length }, 'Review persisted')
+
+            // Post completed check run
+            if (mr.headSha) {
+              const conclusion = criticalCount > 0 ? 'failure' as const : 'success' as const
+              const parts = []
+              if (criticalCount > 0) parts.push(`${criticalCount} critical`)
+              if (warningCount > 0) parts.push(`${warningCount} warning`)
+              if (suggestionCount > 0) parts.push(`${suggestionCount} suggestion`)
+              if (praiseCount > 0) parts.push(`${praiseCount} praise`)
+              const summary = parts.length > 0 ? parts.join(', ') : 'No findings'
+
+              try {
+                await container.vcsProvider.createCheckRun(mr.projectId, {
+                  sha: mr.headSha,
+                  status: 'completed',
+                  conclusion,
+                  title: criticalCount > 0 ? `${criticalCount} critical finding${criticalCount > 1 ? 's' : ''} found` : 'All clear',
+                  summary: `${findings.length} finding${findings.length !== 1 ? 's' : ''}: ${summary}`,
+                  detailsUrl: repoFullName ? `https://github.com/${repoFullName}/pull/${mr.iid}` : undefined,
+                })
+              } catch (err) {
+                logger.warn({ err }, 'Failed to create completed check run')
+              }
+            }
           } catch (err) {
             logger.error({ err }, 'Review failed')
+
+            // Post failed check run
+            if (mr.headSha) {
+              try {
+                await container.vcsProvider.createCheckRun(mr.projectId, {
+                  sha: mr.headSha,
+                  status: 'completed',
+                  conclusion: 'failure',
+                  title: 'Review failed',
+                  summary: 'Viper encountered an error during review. Check server logs.',
+                })
+              } catch {}
+            }
           }
         }
         doReview()

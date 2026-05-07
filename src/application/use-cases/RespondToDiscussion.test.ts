@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { RespondToDiscussion } from './RespondToDiscussion.js'
-import type { VcsProvider, Discussion } from 'viper-vcs-providers'
-import type { AiReviewer } from 'viper-ai-providers'
+import type { VcsProvider, Discussion } from '@supaproxy/viper-vcs-providers'
+import type { AiReviewer } from '@supaproxy/viper-ai-providers'
 import type { ConfigLoader, ViperReviewConfig } from '../../domain/ports/ConfigLoader.js'
 
 function mockVcs(): VcsProvider {

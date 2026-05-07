@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { DiffFormatter } from './DiffFormatter.js'
-import type { DiffFile } from 'viper-vcs-providers'
+import type { DiffFile } from '@supaproxy/viper-vcs-providers'
 
 const makeDiff = (overrides: Partial<DiffFile> = {}): DiffFile => ({
   oldPath: 'src/app.ts',

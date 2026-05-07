@@ -1,5 +1,5 @@
-import type { VcsProvider } from "viper-vcs-providers";
-import type { AiReviewer } from "viper-ai-providers";
+import type { VcsProvider } from "@supaproxy/viper-vcs-providers";
+import type { AiReviewer } from "@supaproxy/viper-ai-providers";
 import type { ConfigLoader } from "../../domain/ports/ConfigLoader.js";
 import type { RespondToDiscussionDTO } from "../dto/RespondToDiscussionDTO.js";
 

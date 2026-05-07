@@ -24,7 +24,7 @@ import { RespondToDiscussion } from './application/use-cases/RespondToDiscussion
 import { YamlConfigLoader } from './infrastructure/config/YamlConfigLoader.js'
 import { LogEventBus } from './infrastructure/events/LogEventBus.js'
 import { webhookAuth } from './presentation/api/middleware/webhookAuth.js'
-import { registry as aiRegistry } from 'viper-ai-providers'
+import { registry as aiRegistry } from '@supaproxy/viper-ai-providers'
 import { logger } from './shared/logger.js'
 
 const DEFAULT_ORG_ID = 'default'

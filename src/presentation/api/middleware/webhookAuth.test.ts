@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { Hono } from 'hono'
 import { webhookAuth } from './webhookAuth.js'
-import type { VcsPlugin } from 'viper-vcs-providers'
+import type { VcsPlugin } from '@supaproxy/viper-vcs-providers'
 
 function mockVcsPlugin(authHeader = 'x-webhook-token'): VcsPlugin {
   return {

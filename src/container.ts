@@ -17,12 +17,12 @@ import { ReviewMergeRequest } from './application/use-cases/ReviewMergeRequest.j
 import { PolicyResolver } from './application/services/PolicyResolver.js'
 import { RespondToDiscussion } from './application/use-cases/RespondToDiscussion.js'
 import type { TenantService } from './application/ports/TenantService.js'
-import type { VcsPlugin, VcsProvider } from 'viper-vcs-providers'
-import type { AiReviewer } from 'viper-ai-providers'
+import type { VcsPlugin, VcsProvider } from '@supaproxy/viper-vcs-providers'
+import type { AiReviewer } from '@supaproxy/viper-ai-providers'
 
 // Import registries from external packages — auto-registers all built-in plugins
-import { registry as vcsRegistry } from 'viper-vcs-providers'
-import { registry as aiRegistry } from 'viper-ai-providers'
+import { registry as vcsRegistry } from '@supaproxy/viper-vcs-providers'
+import { registry as aiRegistry } from '@supaproxy/viper-ai-providers'
 
 interface ContainerOptions {
   tenantService?: TenantService

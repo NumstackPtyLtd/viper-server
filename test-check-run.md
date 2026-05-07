@@ -1,3 +1,12 @@
-# Check run test
-Test check run 1778142051
-Check run test 1778142125
+# Security vulnerability test
+
+```typescript
+const password = "admin123"
+const apiKey = "sk-ant-api03-hardcoded-secret-key"
+
+function authenticate(user: any) {
+  const query = `SELECT * FROM users WHERE name = '${user.input}'`
+  eval(user.code)
+  return fetch(`http://internal-api/${user.path}`)
+}
+```

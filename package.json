@@ -1,7 +1,7 @@
 {
   "name": "@supaproxy/viper-server",
   "version": "0.1.1",
-  "description": "AI-powered code reviewer — open-source server ",
+  "description": "AI-powered code reviewer — open-source server",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -31,8 +31,8 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.13.0",
-    "@supaproxy/viper-ai-providers": "^0.1.0",
-    "@supaproxy/viper-vcs-providers": "^0.1.0",
+    "@supaproxy/viper-ai-providers": "0.1.1",
+    "@supaproxy/viper-vcs-providers": "0.1.1",
     "better-sqlite3": "^11.9.1",
     "hono": "^4.6.0",
     "minimatch": "^10.0.0",

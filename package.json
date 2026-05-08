@@ -1,6 +1,6 @@
 {
   "name": "@supaproxy/viper-server",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "AI-powered code reviewer — open-source server",
   "type": "module",
   "main": "dist/index.js",
@@ -15,7 +15,9 @@
       "import": "./dist/server.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.build.json",

@@ -14,6 +14,8 @@ function mockVcs(): VcsProvider {
     replyToDiscussion: vi.fn(),
     resolveDiscussion: vi.fn(),
     getFileContent: vi.fn(),
+    createCheckRun: vi.fn(),
+    getReviewUrl: vi.fn().mockReturnValue(null),
   }
 }
 

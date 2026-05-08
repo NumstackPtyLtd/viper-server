@@ -12,6 +12,8 @@ function mockVcs(fileContent: string | null = null): VcsProvider {
     createComment: vi.fn(),
     replyToDiscussion: vi.fn(),
     resolveDiscussion: vi.fn(),
+    createCheckRun: vi.fn(),
+    getReviewUrl: vi.fn().mockReturnValue(null),
   }
 }
 

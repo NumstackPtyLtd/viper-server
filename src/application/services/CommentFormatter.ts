@@ -1,7 +1,7 @@
 import type { Review } from "../../domain/entities/Review.js";
 import type { ReviewFinding } from "../../domain/entities/ReviewFinding.js";
 
-const VIPER_SIGNATURE = "\n\n---\n*Review by [Viper](https://github.com/NumstackPtyLtd/viper-server)*";
+const VIPER_SIGNATURE = "\n\n---\n*Review by [Viper](https://viper.supaproxy.cloud)*";
 
 export class CommentFormatter {
   static formatSummary(review: Review): string {

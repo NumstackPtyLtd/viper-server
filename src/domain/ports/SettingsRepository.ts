@@ -2,7 +2,7 @@
  * Port: Settings Repository
  *
  * Key-value store for provider configuration.
- * Provider type, API keys, URLs, models — all stored here, never in env vars.
+ * Provider type, API keys, URLs, models. All stored here, never in env vars.
  */
 export interface SettingsRepository {
   get(key: string): string | null

@@ -56,7 +56,7 @@ describe('CommentFormatter', () => {
     it('includes Viper signature', () => {
       const review = makeReview()
       const result = CommentFormatter.formatSummary(review)
-      expect(result).toContain('Review by [Viper]')
+      expect(result).toContain('Review by Viper')
     })
   })
 

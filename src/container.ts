@@ -20,7 +20,7 @@ import type { TenantService } from './application/ports/TenantService.js'
 import type { VcsPlugin, VcsProvider } from '@supaproxy/viper-vcs-providers'
 import type { AiReviewer } from '@supaproxy/viper-ai-providers'
 
-// Import registries from external packages — auto-registers all built-in plugins
+// Import registries from external packages (auto-registers all built-in plugins)
 import { registry as vcsRegistry } from '@supaproxy/viper-vcs-providers'
 import { registry as aiRegistry } from '@supaproxy/viper-ai-providers'
 
@@ -32,7 +32,7 @@ export function createContainer(options?: ContainerOptions) {
   const env = loadEnvConfig()
   const tenantService: TenantService = options?.tenantService ?? new NoOpTenantService()
 
-  // Database + repositories (always available — even before providers are configured)
+  // Database + repositories (always available, even before providers are configured)
   const db = getDatabase(env.DATABASE_PATH)
   const settings = new SqliteSettingsRepository(db)
   const users = new SqliteUserRepository(db)
@@ -46,7 +46,7 @@ export function createContainer(options?: ContainerOptions) {
   const globMatcher = new MinimatchGlobMatcher()
   const policyResolver = new PolicyResolver(policies, wiki, globMatcher)
 
-  // Lazy-resolved providers — only created when settings exist
+  // Lazy-resolved providers: only created when settings exist
   let _vcsPlugin: VcsPlugin | null = null
   let _vcsProvider: VcsProvider | null = null
   let _aiReviewer: AiReviewer | null = null

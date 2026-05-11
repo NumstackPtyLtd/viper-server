@@ -1,7 +1,10 @@
 import type { Review } from "../../domain/entities/Review.js";
 import type { ReviewFinding } from "../../domain/entities/ReviewFinding.js";
 
-const VIPER_SIGNATURE = "\n\n---\n*Review by [Viper](https://viper.supaproxy.cloud)*";
+const VIPER_URL = process.env.VIPER_URL;
+const VIPER_SIGNATURE = VIPER_URL
+  ? `\n\n---\n*Review by [Viper](${VIPER_URL})*`
+  : "\n\n---\n*Review by Viper*";
 
 export class CommentFormatter {
   static formatSummary(review: Review): string {
@@ -21,7 +24,7 @@ export class CommentFormatter {
 
     const praiseSection =
       praiseItems.length > 0
-        ? `\n\n**Nice:**\n${praiseItems.map((p) => `- \`${p.getFile().toString()}:${p.getLine().toNumber()}\` — ${p.getComment()}`).join("\n")}`
+        ? `\n\n**Nice:**\n${praiseItems.map((p) => `- \`${p.getFile().toString()}:${p.getLine().toNumber()}\`: ${p.getComment()}`).join("\n")}`
         : "";
 
     return `## Viper Review\n\n${review.getSummary()}${countLine}${praiseSection}${VIPER_SIGNATURE}`;

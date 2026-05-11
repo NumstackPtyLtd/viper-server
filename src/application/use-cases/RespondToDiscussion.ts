@@ -3,7 +3,7 @@ import type { AiReviewer } from "@supaproxy/viper-ai-providers";
 import type { ConfigLoader } from "../../domain/ports/ConfigLoader.js";
 import type { RespondToDiscussionDTO } from "../dto/RespondToDiscussionDTO.js";
 
-const VIPER_SIGNATURE = "Review by [Viper]";
+const VIPER_SIGNATURE = "Review by Viper";
 
 export class RespondToDiscussion {
   constructor(

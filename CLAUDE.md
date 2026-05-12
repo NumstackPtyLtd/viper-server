@@ -1,4 +1,4 @@
-# Viper Server — AI-Powered Code Reviewer (OSS)
+# Viper Server: AI-Powered Code Reviewer (OSS)
 
 TypeScript | Hono | Clean Architecture | DDD
 
@@ -36,7 +36,7 @@ Presentation -> Application -> Domain <- Infrastructure
 
 #### Presentation (`src/presentation/`)
 - Contains: HTTP routes (Hono), middleware
-- Routes are thin — extract DTO from request, call use case, return response
+- Routes are thin: extract DTO from request, call use case, return response
 - No business logic in routes
 
 #### Shared (`src/shared/`)
@@ -57,9 +57,9 @@ Presentation -> Application -> Domain <- Infrastructure
 
 This server is designed to be extended by `viper-cloud` (proprietary):
 
-- **`src/server.ts`** — Public API that cloud imports: `createContainer`, `createApp`, `TenantService`
-- **`src/container.ts`** — Accepts optional `TenantService` (defaults to `NoOpTenantService`)
-- **`src/app.ts`** — Creates Hono app; cloud can mount additional routes after
+- **`src/server.ts`**: Public API that cloud imports: `createContainer`, `createApp`, `TenantService`
+- **`src/container.ts`**: Accepts optional `TenantService` (defaults to `NoOpTenantService`)
+- **`src/app.ts`**: Creates Hono app; cloud can mount additional routes after
 
 Cloud imports: `import { createContainer, createApp } from 'viper-server/server'`
 

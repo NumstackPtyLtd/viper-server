@@ -1,5 +1,5 @@
 /**
- * App factory — creates the Hono app with all routes mounted.
+ * App factory: creates the Hono app with all routes mounted.
  *
  * First run: visit / to get the setup wizard.
  * After setup: webhooks + all API routes active.
@@ -76,7 +76,7 @@ export function createApp(container: Container, options?: AppOptions): Hono {
   // Settings routes last (catch-all /api/settings/:key)
   app.route('/', settingsRoutes({ settings: container.settings }))
 
-  // Webhook — parses, authenticates, reviews, and persists
+  // Webhook: parses, authenticates, reviews, and persists
   app.post('/webhook', async (c) => {
     if (!container.configured) {
       return c.json({ error: 'Not configured. Visit /setup to get started.' }, 503)
@@ -129,7 +129,7 @@ export function createApp(container: Container, options?: AppOptions): Hono {
     const botUserId = container.settings.get('bot_user_id')
     const botId = botUserId ? Number(botUserId) : null
 
-    // Handle merge_request — review + persist
+    // Handle merge_request: review + persist
     if (event.kind === 'merge_request' && event.mergeRequest) {
       const mr = event.mergeRequest
       const reviewableActions = ['open', 'reopen', 'update']
@@ -212,7 +212,7 @@ export function createApp(container: Container, options?: AppOptions): Hono {
       }
     }
 
-    // Handle comment — reply
+    // Handle comment: reply
     if (event.kind === 'comment' && event.comment) {
       const comment = event.comment
       if (botId === null || comment.authorId !== botId) {

@@ -121,7 +121,7 @@ export class ReviewMergeRequest {
           await this.vcs.createComment(
             dto.projectId,
             dto.mrIid,
-            `**${finding.getFile().toString()}:${finding.getLine().toNumber()}** — ${CommentFormatter.formatFinding(finding)}`
+            `**${finding.getFile().toString()}:${finding.getLine().toNumber()}**: ${CommentFormatter.formatFinding(finding)}`
           );
         }
       }

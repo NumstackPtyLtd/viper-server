@@ -27,7 +27,7 @@ export function setupRoutes(deps: SetupRouteDeps): Hono {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Viper — Setup</title>
+  <title>Viper: Setup</title>
   <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
   <style>
     @font-face { font-family: 'Costaline'; src: url('/public/fonts/costaline_variable-vf.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
@@ -81,7 +81,7 @@ export function setupRoutes(deps: SetupRouteDeps): Hono {
 
       <form id="setup-form">
         <div class="step">
-          <div class="step-label">Step 1 — Code host</div>
+          <div class="step-label">Step 1: Code host</div>
           <div class="cards" id="vcs-cards"></div>
           <input type="hidden" name="vcs_provider_type" id="vcs_provider_type" required>
           <div id="vcs-fields"></div>
@@ -90,7 +90,7 @@ export function setupRoutes(deps: SetupRouteDeps): Hono {
         <hr class="divider">
 
         <div class="step">
-          <div class="step-label">Step 2 — AI provider</div>
+          <div class="step-label">Step 2: AI provider</div>
           <div class="cards" id="ai-cards"></div>
           <input type="hidden" name="ai_provider_type" id="ai_provider_type" required>
           <div id="ai-fields"></div>
@@ -99,7 +99,7 @@ export function setupRoutes(deps: SetupRouteDeps): Hono {
         <hr class="divider">
 
         <div class="step">
-          <div class="step-label">Step 3 — Webhook security</div>
+          <div class="step-label">Step 3: Webhook security</div>
           <div class="field">
             <label for="webhook_secret">Webhook Secret</label>
             <input id="webhook_secret" name="webhook_secret" type="password" required>
